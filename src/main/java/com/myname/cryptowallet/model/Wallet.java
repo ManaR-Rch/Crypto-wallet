@@ -1,39 +1,93 @@
-package com.myname.cryptowallet.repository;
+package com.myname.cryptowallet.model;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 /**
- * Gère la connexion JDBC à PostgreSQL.
- * Remplir l'URL, l'utilisateur et le mot de passe adaptés à votre environnement.
+ * Représente un portefeuille crypto simple.
  */
-public class DatabaseConnection {
+public class Wallet {
 
-    // Exemple: jdbc:postgresql://localhost:5432/cryptowallet
-    private final String url;
-    private final String user;
-    private final String password;
+    /** Identifiant unique du wallet. */
+    private UUID id;
+    /** Adresse publique du wallet. */
+    private String address;
+    /** Solde courant du wallet. */
+    private BigDecimal balance;
+    /** Type de crypto de ce wallet (BTC/ETH). */
+    private TypeCrypto cryptoType;
+    /** Historique des transactions associées. */
+    private List<Transaction> transactions;
 
     /**
-     * Crée un gestionnaire de connexion.
-     * @param url JDBC URL PostgreSQL
-     * @param user utilisateur
-     * @param password mot de passe
+     * Constructeur simple.
+     * Initialise un wallet avec un solde à 0 et une liste vide de transactions.
+     * @param address adresse publique du wallet
+     * @param cryptoType type de crypto (BITCOIN/ETHEREUM)
      */
-    public DatabaseConnection(String url, String user, String password) {
-        this.url = "jdbc:postgresql://localhost:5432/java1";
-        this.user = "postgres";
-        this.password = "12345";
+    public Wallet(String address, TypeCrypto cryptoType) {
+        this.id = UUID.randomUUID();
+        this.address = address;
+        this.cryptoType = cryptoType;
+        this.balance = BigDecimal.ZERO;
+        this.transactions = new ArrayList<>();
     }
 
     /**
-     * Retourne une nouvelle connexion JDBC.
+     * Ajoute une transaction au wallet et met à jour le solde de façon naïve.
+     * Si l'adresse du wallet est destinataire, le solde augmente.
+     * Si l'adresse du wallet est source, le solde diminue.
+     * @param tx transaction à ajouter
      */
-    public Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(url, user, password);
+    public void addTransaction(Transaction tx) {
+        if (tx == null) {
+            return;
+        }
+        this.transactions.add(tx);
+
+        if (this.address != null && this.address.equals(tx.getDestinationAddress())) {
+            // Entrée de fonds
+            if (tx.getAmount() != null) {
+                this.balance = this.balance.add(tx.getAmount());
+            }
+        } else if (this.address != null && this.address.equals(tx.getSourceAddress())) {
+            // Sortie de fonds
+            if (tx.getAmount() != null) {
+                this.balance = this.balance.subtract(tx.getAmount());
+            }
+        }
+    }
+
+    /**
+     * Affiche le solde du wallet dans la console.
+     */
+    public void displayBalance() {
+        System.out.println("Wallet " + address + " (" + cryptoType + ") - Solde: " + balance);
+    }
+
+    // Getters simples
+
+    public UUID getId() {
+        return id;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public TypeCrypto getCryptoType() {
+        return cryptoType;
+    }
+
+    public List<Transaction> getTransactions() {
+        return transactions;
     }
 }
-
 
 
